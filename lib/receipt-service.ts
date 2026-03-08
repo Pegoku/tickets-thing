@@ -184,6 +184,7 @@ export async function updateDraftReview(id: string, submission: ReviewSubmission
     items: parsed.items.map((item) => ({
       ...item,
       originalName: item.originalName.trim(),
+      genericName: item.genericName.trim(),
       translatedNameEn: item.translatedNameEn.trim(),
       translatedNameEs: item.translatedNameEs.trim(),
       quantityValue: normalizeOptionalNumber(item.quantityValue),

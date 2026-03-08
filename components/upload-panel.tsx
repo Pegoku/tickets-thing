@@ -70,7 +70,7 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
   return (
     <div className={styles.shell}>
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>tickets-thing</p>
+        <div className={styles.eyebrow}>tickets-thing</div>
         <h1>Turn grocery tickets into a reviewable price table.</h1>
         <p className={styles.copy}>
           Drop in scans, phone photos, or PDFs. PDF pages are converted into images,
@@ -96,6 +96,11 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
               multiple
               onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
             />
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--fg-muted)", marginBottom: "8px" }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
             <span className={styles.dropTitle}>Upload ticket scans</span>
             <span className={styles.dropCopy}>
               Images are normalized. PDFs are split into page images automatically.
@@ -115,6 +120,7 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
             <h2>What gets extracted</h2>
             <ul>
               <li>Original product names as printed</li>
+              <li>Generic normalized item name</li>
               <li>English and Spanish translations</li>
               <li>Unit price and price per kg/l when available</li>
               <li>Supermarket name and sortable supermarket tag</li>

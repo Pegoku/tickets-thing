@@ -1,17 +1,63 @@
 :root {
-  --bg: #f3eadb;
-  --bg-deep: #e4d3bc;
-  --paper: rgba(255, 251, 244, 0.82);
-  --paper-strong: #fff8ee;
-  --ink: #1e1915;
-  --muted: #5f564c;
-  --line: rgba(81, 62, 38, 0.16);
-  --accent: #1e6b5c;
-  --accent-strong: #0f4d42;
-  --accent-soft: rgba(30, 107, 92, 0.12);
-  --gold: #c28d3d;
-  --danger: #9e4732;
-  --shadow: 0 20px 60px rgba(79, 55, 26, 0.12);
+  --bg: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-muted: #f1f5f9;
+  --bg-hover: #f8fafc;
+  --fg: #0f172a;
+  --fg-muted: #64748b;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  
+  --accent: #0f172a;
+  --accent-fg: #ffffff;
+  
+  --primary: #0f172a;
+  --primary-hover: #1e293b;
+  --primary-fg: #ffffff;
+  
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-glow: 0 0 24px -4px rgb(0 0 0 / 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #020617;
+    --bg-surface: #0f172a;
+    --bg-muted: #1e293b;
+    --bg-hover: #1e293b;
+    --fg: #f8fafc;
+    --fg-muted: #94a3b8;
+    --border: #1e293b;
+    --border-strong: #334155;
+    
+    --accent: #f8fafc;
+    --accent-fg: #020617;
+    
+    --primary: #f8fafc;
+    --primary-hover: #e2e8f0;
+    --primary-fg: #020617;
+    
+    --danger: #ef4444;
+    --danger-bg: #450a0a;
+    --success: #10b981;
+    --success-bg: #064e3b;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-glow: 0 0 24px -4px rgb(255 255 255 / 0.05);
+  }
 }
 
 * {
@@ -26,25 +72,25 @@ html {
 
 body {
   min-height: 100vh;
-  color: var(--ink);
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.75), transparent 28%),
-    radial-gradient(circle at top right, rgba(194, 141, 61, 0.18), transparent 26%),
-    linear-gradient(180deg, #f8f0e4 0%, var(--bg) 52%, var(--bg-deep) 100%);
-  font-family: var(--font-sans), sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Subtle grid background for the entire app */
 body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: 26px 26px;
-  opacity: 0.35;
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center top, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at center top, black, transparent 80%);
+  opacity: 0.4;
   content: "";
   pointer-events: none;
 }
@@ -52,6 +98,7 @@ body::before {
 a {
   color: inherit;
   text-decoration: none;
+  transition: color 0.15s ease;
 }
 
 button,
@@ -59,6 +106,13 @@ input,
 select,
 textarea {
   font: inherit;
+  color: inherit;
+  outline: none;
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 img {
@@ -67,12 +121,31 @@ img {
 }
 
 main {
-  width: min(1160px, calc(100vw - 32px));
+  width: min(1200px, calc(100vw - 40px));
   margin: 0 auto;
 }
 
 @media (max-width: 640px) {
   main {
-    width: min(100vw - 20px, 1160px);
+    width: min(100vw - 32px, 1200px);
   }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
 }

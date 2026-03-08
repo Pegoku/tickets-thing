@@ -12,6 +12,7 @@ const HEADERS = [
   "supermarket_name",
   "supermarket_tag",
   "original_name",
+  "generic_name",
   "name_en",
   "name_es",
   "quantity_value",
@@ -73,7 +74,7 @@ export async function ensureSheetTable() {
 
   await client.spreadsheets.values.update({
     spreadsheetId,
-    range: `${tabName}!A1:R1`,
+    range: `${tabName}!A1:S1`,
     valueInputOption: "RAW",
     requestBody: {
       values: [HEADERS],
@@ -123,6 +124,7 @@ export async function appendReceiptToSheet(draft: ReceiptDraft) {
     draft.supermarketName ?? "",
     draft.supermarketTag ?? "",
     item.originalName,
+    item.genericName,
     item.translatedNameEn,
     item.translatedNameEs,
     item.quantityValue ?? "",
@@ -143,7 +145,7 @@ export async function appendReceiptToSheet(draft: ReceiptDraft) {
 
   await client.spreadsheets.values.append({
     spreadsheetId,
-    range: `${tabName}!A:R`,
+    range: `${tabName}!A:S`,
     valueInputOption: "USER_ENTERED",
     insertDataOption: "INSERT_ROWS",
     requestBody: {

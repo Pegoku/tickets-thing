@@ -36,6 +36,7 @@ const receiptJsonSchema = {
         type: "object",
         required: [
           "originalName",
+          "genericName",
           "translatedNameEn",
           "translatedNameEs",
           "quantityValue",
@@ -49,6 +50,7 @@ const receiptJsonSchema = {
         ],
         properties: {
           originalName: { type: "string" },
+          genericName: { type: "string" },
           translatedNameEn: { type: "string" },
           translatedNameEs: { type: "string" },
           quantityValue: { type: ["number", "null"] },
@@ -74,6 +76,7 @@ export async function extractReceiptData(pages: ProcessInputPage[]) {
     "Return only JSON matching the schema.",
     "Rules:",
     "- Preserve original product names exactly as printed when possible.",
+    "- genericName should be a short normalized product category/name, such as Tomato, Milk, Wheat Bread, Banana, Olive Oil, or Chicken Breast.",
     "- translatedNameEn must be English.",
     "- translatedNameEs must be Spanish.",
     "- supermarketTag should be a short classification token such as JUMBO or AH when possible.",
@@ -121,6 +124,7 @@ export async function extractReceiptData(pages: ProcessInputPage[]) {
           id: crypto.randomUUID(),
           lineIndex: index,
           originalName: item && typeof item === "object" ? item.originalName ?? "" : "",
+          genericName: item && typeof item === "object" ? item.genericName ?? "" : "",
           translatedNameEn:
             item && typeof item === "object" ? item.translatedNameEn ?? "" : "",
           translatedNameEs:

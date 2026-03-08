@@ -247,6 +247,7 @@ export function ReviewEditor({ draft }: ReviewEditorProps) {
               <tr>
                 <th>#</th>
                 <th>Original</th>
+                <th>Generic</th>
                 <th>English</th>
                 <th>Spanish</th>
                 <th>Unit price</th>
@@ -269,6 +270,12 @@ export function ReviewEditor({ draft }: ReviewEditorProps) {
                       rows={2}
                       value={item.rawText ?? ""}
                       onChange={(event) => updateItem(index, "rawText", event.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={item.genericName}
+                      onChange={(event) => updateItem(index, "genericName", event.target.value)}
                     />
                   </td>
                   <td>
