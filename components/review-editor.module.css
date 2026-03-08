@@ -297,6 +297,102 @@
   min-width: 60px;
 }
 
+/* Sync status row highlights */
+.syncNew {}
+
+.syncDuplicate {
+  opacity: 0.5;
+}
+
+.syncChanged {
+  background: color-mix(in srgb, var(--warning, #f59e0b) 8%, transparent);
+}
+
+.rowSkipped {
+  opacity: 0.45;
+}
+
+/* Sync summary in sidebar */
+.syncSummary {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.syncStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.syncStatNew,
+.syncStatDuplicate,
+.syncStatChanged {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.syncStatNew {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.syncStatDuplicate {
+  background: var(--bg-muted);
+  color: var(--fg-muted);
+}
+
+.syncStatChanged {
+  background: color-mix(in srgb, var(--warning, #f59e0b) 15%, transparent);
+  color: var(--warning, #b45309);
+}
+
+/* Sync badges in table */
+.syncBadge {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.syncBadge[data-sync="new"] {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.syncBadge[data-sync="duplicate"] {
+  background: var(--bg-muted);
+  color: var(--fg-muted);
+}
+
+.syncBadge[data-sync="price_changed"] {
+  background: color-mix(in srgb, var(--warning, #f59e0b) 15%, transparent);
+  color: var(--warning, #b45309);
+}
+
+/* Decision controls */
+.decisionLabel {
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+
+.decisionSelect {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 @media (max-width: 1024px) {
   .layout {
     grid-template-columns: 1fr;

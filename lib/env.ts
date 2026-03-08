@@ -8,7 +8,7 @@ const optionalEnvSchema = z.object({
   GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
   GOOGLE_SHEETS_SPREADSHEET_URL: z.string().optional(),
   GOOGLE_SHEETS_SPREADSHEET_ID: z.string().optional(),
-  GOOGLE_SHEETS_TAB_NAME: z.string().default("tickets"),
+  GOOGLE_SHEETS_TAB_NAME: z.string().default("prices"),
   GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: z.string().optional(),
   STORAGE_DIR: z.string().default(path.join(process.cwd(), ".data")),

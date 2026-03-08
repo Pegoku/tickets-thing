@@ -121,13 +121,14 @@ img {
 }
 
 main {
-  width: min(1200px, calc(100vw - 40px));
+  width: 100%;
+  padding: 0 24px;
   margin: 0 auto;
 }
 
 @media (max-width: 640px) {
   main {
-    width: min(100vw - 32px, 1200px);
+    padding: 0 16px;
   }
 }
 

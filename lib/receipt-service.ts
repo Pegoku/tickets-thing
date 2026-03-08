@@ -13,7 +13,14 @@ import {
   saveDraft,
   writeReceiptBuffer,
 } from "@/lib/storage";
-import { appendReceiptToSheet } from "@/lib/sheets";
+import {
+  checkForDuplicates,
+  fetchExistingRows,
+  syncReceiptToSheet,
+  type ItemSyncResult,
+  type SyncDecision,
+  type SyncSummary,
+} from "@/lib/sheets";
 import {
   receiptDraftSchema,
   reviewSubmissionSchema,
@@ -184,7 +191,6 @@ export async function updateDraftReview(id: string, submission: ReviewSubmission
     items: parsed.items.map((item) => ({
       ...item,
       originalName: item.originalName.trim(),
-      genericName: item.genericName.trim(),
       translatedNameEn: item.translatedNameEn.trim(),
       translatedNameEs: item.translatedNameEs.trim(),
       quantityValue: normalizeOptionalNumber(item.quantityValue),
@@ -204,11 +210,50 @@ export async function updateDraftReview(id: string, submission: ReviewSubmission
   return updated;
 }
 
-export async function confirmDraft(id: string, submission: ReviewSubmission) {
+/**
+ * Check items against existing sheet data for duplicates. Returns sync status per item.
+ */
+export async function checkDraftDuplicates(
+  id: string,
+  submission: ReviewSubmission,
+): Promise<ItemSyncResult[]> {
+  console.log("[checkDraftDuplicates] Updating draft review for:", id);
   const updated = await updateDraftReview(id, submission);
+  console.log("[checkDraftDuplicates] Draft updated. Tag:", updated.supermarketTag, "| Items:", updated.items.length);
+
+  console.log("[checkDraftDuplicates] Fetching existing rows from sheet...");
+  const existingRows = await fetchExistingRows();
+  console.log("[checkDraftDuplicates] Existing rows:", existingRows.length);
+
+  const results = checkForDuplicates(
+    updated.items,
+    updated.supermarketTag,
+    existingRows,
+  );
+  console.log("[checkDraftDuplicates] Duplicate check results:", results.map(r => `${r.itemId.slice(0,8)}=${r.status}`).join(", "));
+  return results;
+}
+
+/**
+ * Confirm and sync a draft to Google Sheets with per-item decisions (add/skip/update).
+ */
+export async function confirmDraft(
+  id: string,
+  submission: ReviewSubmission,
+  decisions: SyncDecision[],
+) {
+  console.log("[confirmDraft] Starting confirm for draft:", id);
+  const updated = await updateDraftReview(id, submission);
+  console.log("[confirmDraft] Draft updated. Items:", updated.items.length);
 
   try {
-    await appendReceiptToSheet(updated);
+    console.log("[confirmDraft] Fetching existing rows...");
+    const existingRows = await fetchExistingRows();
+    console.log("[confirmDraft] Existing rows:", existingRows.length);
+
+    console.log("[confirmDraft] Syncing to sheet with", decisions.length, "decisions...");
+    const summary = await syncReceiptToSheet(updated, decisions, existingRows);
+    console.log("[confirmDraft] Sync complete:", JSON.stringify(summary));
 
     const confirmed = receiptDraftSchema.parse({
       ...updated,
@@ -219,8 +264,9 @@ export async function confirmDraft(id: string, submission: ReviewSubmission) {
     });
 
     await saveDraft(confirmed);
-    return confirmed;
+    return { draft: confirmed, summary };
   } catch (error) {
+    console.error("[confirmDraft] Error during sync:", error);
     const failed = receiptDraftSchema.parse({
       ...updated,
       status: "sync_failed",

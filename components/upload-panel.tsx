@@ -70,12 +70,12 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
   return (
     <div className={styles.shell}>
       <section className={styles.hero}>
-        <div className={styles.eyebrow}>tickets-thing</div>
-        <h1>Turn grocery tickets into a reviewable price table.</h1>
+        <div className={styles.eyebrow}>Price Registry</div>
+        <h1>Build a product price registry from supermarket receipts.</h1>
         <p className={styles.copy}>
-          Drop in scans, phone photos, or PDFs. PDF pages are converted into images,
-          Gemini extracts the line items, and you approve the final rows before they go
-          into Google Sheets.
+          Drop in scans, phone photos, or PDFs. Gemini extracts the products and prices,
+          you review them, and new entries get added to your Google Sheets price registry.
+          Duplicates are detected automatically.
         </p>
 
         <div className={styles.badges}>
@@ -101,7 +101,7 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
               <polyline points="17 8 12 3 7 8"></polyline>
               <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-            <span className={styles.dropTitle}>Upload ticket scans</span>
+            <span className={styles.dropTitle}>Upload receipt scans</span>
             <span className={styles.dropCopy}>
               Images are normalized. PDFs are split into page images automatically.
             </span>
@@ -120,19 +120,18 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
             <h2>What gets extracted</h2>
             <ul>
               <li>Original product names as printed</li>
-              <li>Generic normalized item name</li>
-              <li>English and Spanish translations</li>
+              <li>Generic English and Spanish names</li>
               <li>Unit price and price per kg/l when available</li>
               <li>Supermarket name and sortable supermarket tag</li>
             </ul>
           </article>
 
           <article>
-            <h2>Export shape</h2>
+            <h2>How the registry works</h2>
             <ul>
-              <li>One Google Sheets row per item</li>
-              <li>Filterable header row on the configured tab</li>
-              <li>Receipt metadata repeated for sorting and analysis</li>
+              <li>One row per product per supermarket</li>
+              <li>Duplicates detected before syncing</li>
+              <li>Price changes can be updated or skipped</li>
               <li>Manual review before any sync happens</li>
             </ul>
           </article>
@@ -152,7 +151,7 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
             {recentDrafts.map((draft) => (
               <a key={draft.id} className={styles.recentCard} href={`/receipts/${draft.id}/review`}>
                 <div>
-                  <p className={styles.recentName}>{draft.supermarketName || "Untitled receipt"}</p>
+                  <p className={styles.recentName}>{draft.supermarketName || "Untitled"}</p>
                   <p className={styles.recentMeta}>
                     {draft.items.length} items · {draft.pages.length} pages · {draft.status}
                   </p>

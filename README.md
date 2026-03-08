@@ -10,9 +10,8 @@ Upload supermarket ticket scans as images or PDFs, extract structured item rows 
   - supermarket name
   - supermarket tag
   - original item name
-  - generic item name
-  - English translation
-  - Spanish translation
+  - generic English name
+  - generic Spanish name
   - unit price
   - price per kg/l when present or confidently derivable
 - Lets the user review and edit results before syncing

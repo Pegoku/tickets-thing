@@ -36,7 +36,6 @@ const receiptJsonSchema = {
         type: "object",
         required: [
           "originalName",
-          "genericName",
           "translatedNameEn",
           "translatedNameEs",
           "quantityValue",
@@ -50,7 +49,6 @@ const receiptJsonSchema = {
         ],
         properties: {
           originalName: { type: "string" },
-          genericName: { type: "string" },
           translatedNameEn: { type: "string" },
           translatedNameEs: { type: "string" },
           quantityValue: { type: ["number", "null"] },
@@ -73,12 +71,16 @@ export async function extractReceiptData(pages: ProcessInputPage[]) {
 
   const prompt = [
     "You extract supermarket receipt data from one or more images.",
+    "This data feeds a price-per-supermarket registry, so generic names must be maximally reusable.",
     "Return only JSON matching the schema.",
     "Rules:",
     "- Preserve original product names exactly as printed when possible.",
-    "- genericName should be a short normalized product category/name, such as Tomato, Milk, Wheat Bread, Banana, Olive Oil, or Chicken Breast.",
-    "- translatedNameEn must be English.",
-    "- translatedNameEs must be Spanish.",
+    "- translatedNameEn must be a short, generic English product name — the kind you would use as a canonical grocery category.",
+    "- translatedNameEs must be a short, generic Spanish product name — the kind you would use as a canonical grocery category.",
+    "- IMPORTANT: Strip ALL qualifiers, certifications, and descriptors from translated names. Remove words like: organic, bio, ecological, free-range, gluten-free, sugar-free, light, diet, zero, whole-grain, vegan, lactose-free, fair-trade, artisan, premium, natural, fresh, frozen, canned, smoked, raw, roasted, salted, unsalted, etc. Keep only the core product identity.",
+    "- Example: 'AH Biologisch Halfvolle Melk' → translatedNameEn: 'Semi-skimmed Milk', translatedNameEs: 'Leche semidesnatada'.",
+    "- Example: 'Pollo Campero Orgánico' → translatedNameEn: 'Chicken', translatedNameEs: 'Pollo'.",
+    "- Example: 'Pan Integral Sin Gluten Bio' → translatedNameEn: 'Bread', translatedNameEs: 'Pan'.",
     "- supermarketTag should be a short classification token such as JUMBO or AH when possible.",
     "- If a value is unknown, use null for numeric/nullable fields and empty string for text fields.",
     "- pricePerMeasureValue and pricePerMeasureUnit should only be filled when clearly shown or confidently derived.",
@@ -124,7 +126,6 @@ export async function extractReceiptData(pages: ProcessInputPage[]) {
           id: crypto.randomUUID(),
           lineIndex: index,
           originalName: item && typeof item === "object" ? item.originalName ?? "" : "",
-          genericName: item && typeof item === "object" ? item.genericName ?? "" : "",
           translatedNameEn:
             item && typeof item === "object" ? item.translatedNameEn ?? "" : "",
           translatedNameEs:

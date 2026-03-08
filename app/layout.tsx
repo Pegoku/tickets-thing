@@ -13,8 +13,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "tickets-thing",
-  description: "Upload receipt scans, extract structured data with Gemini, and confirm rows into Google Sheets.",
+  title: "Price Registry",
+  description: "Scan supermarket receipts, extract product prices with Gemini, and build a price-per-supermarket registry in Google Sheets.",
 };
 
 export default function RootLayout({
