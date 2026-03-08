@@ -1,10 +1,24 @@
 import "server-only";
 
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
 import { createCanvas } from "@napi-rs/canvas";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import sharp from "sharp";
 
 import { getOptionalEnv } from "@/lib/env";
+
+const workerPath = path.join(
+  process.cwd(),
+  "node_modules",
+  "pdfjs-dist",
+  "legacy",
+  "build",
+  "pdf.worker.mjs",
+);
+
+pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(workerPath).href;
 
 type RenderedPdfPage = {
   pageNumber: number;
