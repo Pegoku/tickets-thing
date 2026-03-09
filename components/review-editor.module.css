@@ -93,6 +93,25 @@
 .fieldStack input,
 .fieldStack textarea {
   width: 100%;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  transition: all 0.2s ease;
+}
+
+.fieldStack input:hover,
+.fieldStack textarea:hover {
+  border-color: var(--border-strong);
+}
+
+.fieldStack input:focus,
+.fieldStack textarea:focus {
+  background: var(--bg-surface);
+  border-color: var(--fg-muted);
+  box-shadow: 0 0 0 2px var(--bg-muted);
 }
 
 .statGrid {
