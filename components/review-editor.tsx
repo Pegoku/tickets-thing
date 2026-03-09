@@ -397,7 +397,6 @@ export function ReviewEditor({ draft }: ReviewEditorProps) {
                 <th>English</th>
                 <th>Spanish</th>
                 <th>Unit price</th>
-                <th>Per kg/l</th>
                 <th>Qty</th>
                 {syncResults && <th>Status</th>}
                 {syncResults && <th>Action</th>}
@@ -446,31 +445,6 @@ export function ReviewEditor({ draft }: ReviewEditorProps) {
                           updateItem(index, "unitPrice", event.target.value)
                         }
                       />
-                    </td>
-                    <td>
-                      <div className={styles.inlinePair}>
-                        <input
-                          inputMode="decimal"
-                          value={item.pricePerMeasureValue ?? ""}
-                          onChange={(event) =>
-                            updateItem(index, "pricePerMeasureValue", event.target.value)
-                          }
-                        />
-                        <select
-                          value={item.pricePerMeasureUnit ?? ""}
-                          onChange={(event) =>
-                            updateItem(
-                              index,
-                              "pricePerMeasureUnit",
-                              event.target.value || null,
-                            )
-                          }
-                        >
-                          <option value="">-</option>
-                          <option value="kg">kg</option>
-                          <option value="l">l</option>
-                        </select>
-                      </div>
                     </td>
                     <td>
                       <div className={styles.inlinePair}>

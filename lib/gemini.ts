@@ -83,7 +83,7 @@ export async function extractReceiptData(pages: ProcessInputPage[]) {
     "- Example: 'Pan Integral Sin Gluten Bio' → translatedNameEn: 'Bread', translatedNameEs: 'Pan'.",
     "- supermarketTag should be a short classification token such as JUMBO or AH when possible.",
     "- If a value is unknown, use null for numeric/nullable fields and empty string for text fields.",
-    "- pricePerMeasureValue and pricePerMeasureUnit should only be filled when clearly shown or confidently derived.",
+    "- pricePerMeasureValue and pricePerMeasureUnit are optional. Fill them only when clearly printed on the receipt.",
     "- pageNumber should point to the source image page.",
     "- confidence and extractionConfidence must be between 0 and 1.",
     "- Ignore totals, taxes, loyalty lines, and discounts unless they represent product items.",

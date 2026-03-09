@@ -6,6 +6,20 @@ import { getSheetsEnv } from "@/lib/env";
 import type { ReceiptDraft, ReceiptItem } from "@/lib/schema";
 
 const HEADERS = [
+  "Supermarket",
+  "Tag",
+  "Original Name",
+  "Name (EN)",
+  "Name (ES)",
+  "Unit Price",
+  "Currency",
+  "Quantity",
+  "Qty Unit",
+  "Price/Measure",
+];
+
+/** Old headers for auto-migration detection */
+const OLD_HEADERS = [
   "supermarket_name",
   "supermarket_tag",
   "original_name",
@@ -19,11 +33,14 @@ const HEADERS = [
   "price_per_measure_unit",
 ];
 
-/** Column indices matching HEADERS */
+/** Column indices matching HEADERS (0-based) */
 const COL = {
   supermarketTag: 1,
   originalName: 2,
   unitPrice: 5,
+  quantity: 7,
+  qtyUnit: 8,
+  priceMeasure: 9,
 } as const;
 
 const TABLE_NAME = "TicketsThing";
@@ -81,6 +98,15 @@ function toCellValue(value: string | number | null) {
     return {};
   }
 
+  // Formulas start with "="
+  if (typeof value === "string" && value.startsWith("=")) {
+    return {
+      userEnteredValue: {
+        formulaValue: value,
+      },
+    };
+  }
+
   if (typeof value === "number") {
     return {
       userEnteredValue: {
@@ -122,7 +148,7 @@ async function getUsedRowCount(
 ) {
   const values = await client.spreadsheets.values.get({
     spreadsheetId,
-    range: `${tabName}!A1:K`,
+    range: `${tabName}!A1:J`,
   });
 
   return Math.max(values.data.values?.length ?? 0, 1);
@@ -166,6 +192,92 @@ async function createSheetIfMissing(
   return created;
 }
 
+/**
+ * Detects old-format headers and migrates:
+ * 1. Renames headers to friendly names
+ * 2. Deletes the old "price_per_measure_unit" column (column K, index 10)
+ * 3. Replaces static Price/Measure values with live formulas
+ */
+async function migrateIfNeeded(
+  client: sheets_v4.Sheets,
+  spreadsheetId: string,
+  tabName: string,
+  sheetId: number,
+): Promise<void> {
+  let headerResponse;
+  try {
+    headerResponse = await client.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${tabName}!A1:K1`,
+    });
+  } catch {
+    // Sheet might be empty or not exist yet — nothing to migrate
+    return;
+  }
+
+  const currentHeaders = headerResponse.data.values?.[0] ?? [];
+  if (currentHeaders.length === 0) return;
+
+  // Check if old format: look for the first old header as a signal
+  const isOldFormat = currentHeaders[0] === OLD_HEADERS[0] || currentHeaders[0] === "supermarket_name";
+  if (!isOldFormat) return;
+
+  console.log("[migrate] Old-format headers detected, migrating...");
+
+  // Step 1: Delete the old column K (price_per_measure_unit, 0-based index 10)
+  if (currentHeaders.length >= 11) {
+    await client.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: "COLUMNS",
+                startIndex: 10,
+                endIndex: 11,
+              },
+            },
+          },
+        ],
+      },
+    });
+    console.log("[migrate] Deleted old column K (price_per_measure_unit).");
+  }
+
+  // Step 2: Write new headers
+  await client.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${tabName}!A1:J1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [HEADERS],
+    },
+  });
+  console.log("[migrate] Headers updated to friendly format.");
+
+  // Step 3: Replace static Price/Measure values with formulas for all data rows
+  const usedRows = await getUsedRowCount(client, spreadsheetId, tabName);
+  if (usedRows > 1) {
+    const formulas = [];
+    for (let row = 2; row <= usedRows; row++) {
+      formulas.push([priceMeasureFormula(row)]);
+    }
+    await client.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabName}!J2:J${usedRows}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: formulas,
+      },
+    });
+    console.log("[migrate] Replaced static Price/Measure with formulas for", usedRows - 1, "rows.");
+  }
+
+  console.log("[migrate] Migration complete.");
+}
+
 export async function ensureSheetTable() {
   console.log("[ensureSheetTable] Starting...");
   const { client, spreadsheetId, tabName } = await getSheetsClient();
@@ -174,16 +286,19 @@ export async function ensureSheetTable() {
   const sheetId = sheet.properties?.sheetId;
   console.log("[ensureSheetTable] Sheet found/created. sheetId:", sheetId);
 
-  if (sheetId === undefined) {
+  if (sheetId === undefined || sheetId === null) {
     throw new Error("Failed to resolve the destination sheet ID.");
   }
+
+  // Auto-migrate from old format if needed
+  await migrateIfNeeded(client, spreadsheetId, tabName, sheetId);
 
   const usedRowCount = await getUsedRowCount(client, spreadsheetId, tabName);
   console.log("[ensureSheetTable] Used row count:", usedRowCount);
 
   await client.spreadsheets.values.update({
     spreadsheetId,
-    range: `${tabName}!A1:K1`,
+    range: `${tabName}!A1:J1`,
     valueInputOption: "RAW",
     requestBody: {
       values: [HEADERS],
@@ -295,7 +410,7 @@ export async function fetchExistingRows(): Promise<ExistingSheetRow[]> {
   try {
     response = await client.spreadsheets.values.get({
       spreadsheetId,
-      range: `${tabName}!A2:K`,
+      range: `${tabName}!A2:J`,
     });
   } catch (err) {
     console.error("[fetchExistingRows] Sheets API error:", err);
@@ -403,7 +518,19 @@ export type SyncSummary = {
 };
 
 /**
+ * Build a Google Sheets formula for the Price/Measure column.
+ * Only calculates when Qty Unit is "kg" or "l": =IF(AND(F{row}<>"",H{row}<>"",OR(I{row}="kg",I{row}="l")),F{row}/H{row},"")
+ */
+function priceMeasureFormula(rowNumber: number): string {
+  const price = `F${rowNumber}`;
+  const qty = `H${rowNumber}`;
+  const unit = `I${rowNumber}`;
+  return `=IF(AND(${price}<>"",${qty}<>"",OR(${unit}="kg",${unit}="l")),${price}/${qty},"")`;
+}
+
+/**
  * Convert a ReceiptItem into a flat array of cell values matching HEADERS order.
+ * The Price/Measure column is left as null here — the formula is injected separately.
  */
 function itemToRow(draft: ReceiptDraft, item: ReceiptItem): Array<string | number | null> {
   return [
@@ -416,8 +543,7 @@ function itemToRow(draft: ReceiptDraft, item: ReceiptItem): Array<string | numbe
     draft.currency ?? "",
     item.quantityValue,
     item.quantityUnit,
-    item.pricePerMeasureValue,
-    item.pricePerMeasureUnit,
+    null, // Price/Measure — filled by formula
   ];
 }
 
@@ -434,6 +560,9 @@ export async function syncReceiptToSheet(
   const sheetInfo = await getSheetInfo(client, spreadsheetId, tabName);
   const sheetId = sheetInfo?.properties?.sheetId ?? 0;
   console.log("[syncReceiptToSheet] Resolved sheetId:", sheetId);
+
+  // Get used row count so we know where appended rows will land
+  const usedRowCount = await getUsedRowCount(client, spreadsheetId, tabName);
 
   const decisionMap = new Map(decisions.map((d) => [d.itemId, d.action]));
   const summary: SyncSummary = { added: 0, updated: 0, skipped: 0 };
@@ -466,6 +595,8 @@ export async function syncReceiptToSheet(
 
       if (rowNumber) {
         const rowValues = itemToRow(draft, item);
+        // Inject the Price/Measure formula into the last column
+        rowValues[COL.priceMeasure] = priceMeasureFormula(rowNumber);
 
         updateRequests.push({
           updateCells: {
@@ -499,18 +630,25 @@ export async function syncReceiptToSheet(
     console.log("[syncReceiptToSheet] Updates done.");
   }
 
-  // Append new items via values.append (reliable, no native-table dependency)
+  // Append new items via values.append with USER_ENTERED so formulas work
   if (rowsToAppend.length > 0) {
     console.log("[syncReceiptToSheet] Appending", rowsToAppend.length, "new items via values.append...");
+
+    // Calculate row numbers for each appended row and inject formulas
+    const rowsWithFormulas = rowsToAppend.map((row, index) => {
+      const targetRow = usedRowCount + 1 + index; // 1-based row number
+      const values = row.map((v) => (v === null ? "" : v));
+      values[COL.priceMeasure] = priceMeasureFormula(targetRow);
+      return values;
+    });
+
     await client.spreadsheets.values.append({
       spreadsheetId,
-      range: `${tabName}!A1:K1`,
-      valueInputOption: "RAW",
+      range: `${tabName}!A1:J1`,
+      valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: {
-        values: rowsToAppend.map((row) =>
-          row.map((v) => (v === null ? "" : v)),
-        ),
+        values: rowsWithFormulas,
       },
     });
     console.log("[syncReceiptToSheet] Append done.");
@@ -518,47 +656,4 @@ export async function syncReceiptToSheet(
 
   console.log("[syncReceiptToSheet] Final summary:", JSON.stringify(summary));
   return summary;
-}
-
-/**
- * @deprecated Use syncReceiptToSheet with duplicate detection instead.
- */
-export async function appendReceiptToSheet(draft: ReceiptDraft) {
-  const { client, spreadsheetId } = await getSheetsClient();
-  const tableId = await ensureSheetTable();
-
-  const rows = draft.items.map((item) =>
-    toRowData([
-      draft.supermarketName ?? "",
-      draft.supermarketTag ?? "",
-      item.originalName,
-      item.translatedNameEn,
-      item.translatedNameEs,
-      item.unitPrice,
-      draft.currency ?? "",
-      item.quantityValue,
-      item.quantityUnit,
-      item.pricePerMeasureValue,
-      item.pricePerMeasureUnit,
-    ]),
-  );
-
-  if (rows.length === 0) {
-    throw new Error("There are no receipt items to append to Google Sheets.");
-  }
-
-  await client.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      requests: [
-        {
-          appendCells: {
-            tableId,
-            rows,
-            fields: "userEnteredValue",
-          },
-        },
-      ],
-    },
-  });
 }
