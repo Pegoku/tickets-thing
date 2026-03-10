@@ -10,7 +10,7 @@ import styles from "./upload-panel.module.css";
 type UploadPanelProps = {
   recentDrafts: ReceiptDraft[];
   configStatus: {
-    hasGemini: boolean;
+    hasOpenRouter: boolean;
     hasSheets: boolean;
     uploadMaxMb: number;
     maxReceiptPages: number;
@@ -73,13 +73,13 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
         <div className={styles.eyebrow}>Price Registry</div>
         <h1>Build a product price registry from supermarket receipts.</h1>
         <p className={styles.copy}>
-          Drop in scans, phone photos, or PDFs. Gemini extracts the products and prices,
+          Drop in scans, phone photos, or PDFs. OpenRouter extracts the products and prices,
           you review them, and new entries get added to your Google Sheets price registry.
           Duplicates are detected automatically.
         </p>
 
         <div className={styles.badges}>
-          <span data-ready={configStatus.hasGemini}>Gemini {configStatus.hasGemini ? "ready" : "missing"}</span>
+          <span data-ready={configStatus.hasOpenRouter}>OpenRouter {configStatus.hasOpenRouter ? "ready" : "missing"}</span>
           <span data-ready={configStatus.hasSheets}>Sheets {configStatus.hasSheets ? "ready" : "missing"}</span>
           <span>Max {configStatus.uploadMaxMb} MB</span>
           <span>{configStatus.maxReceiptPages} PDF pages</span>
@@ -109,7 +109,7 @@ export function UploadPanel({ recentDrafts, configStatus }: UploadPanelProps) {
           </label>
 
           <button className={styles.primaryAction} disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Processing..." : "Process with Gemini"}
+            {isSubmitting ? "Processing..." : "Process with OpenRouter"}
           </button>
 
           {error ? <p className={styles.error}>{error}</p> : null}

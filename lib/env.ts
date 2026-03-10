@@ -4,8 +4,9 @@ import path from "node:path";
 import { z } from "zod";
 
 const optionalEnvSchema = z.object({
-  GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
+  OPENROUTER_API_KEY: z.string().optional(),
+  OPENROUTER_MODEL: z.string().default("google/gemini-2.5-flash"),
+  OPENROUTER_BASE_URL: z.string().default("https://openrouter.ai/api/v1"),
   GOOGLE_SHEETS_SPREADSHEET_URL: z.string().optional(),
   GOOGLE_SHEETS_SPREADSHEET_ID: z.string().optional(),
   GOOGLE_SHEETS_TAB_NAME: z.string().default("prices"),
@@ -36,16 +37,17 @@ export function getOptionalEnv() {
   return optionalEnvSchema.parse(process.env);
 }
 
-export function getGeminiEnv() {
+export function getOpenRouterEnv() {
   const env = getOptionalEnv();
 
-  if (!env.GEMINI_API_KEY) {
-    throw new Error("Missing GEMINI_API_KEY in environment.");
+  if (!env.OPENROUTER_API_KEY) {
+    throw new Error("Missing OPENROUTER_API_KEY in environment.");
   }
 
   return {
-    apiKey: env.GEMINI_API_KEY,
-    model: env.GEMINI_MODEL,
+    apiKey: env.OPENROUTER_API_KEY,
+    model: env.OPENROUTER_MODEL,
+    baseUrl: env.OPENROUTER_BASE_URL.replace(/\/$/, ""),
   };
 }
 
@@ -78,7 +80,7 @@ export function getConfigStatus() {
   const spreadsheetId = parseSpreadsheetId(env);
 
   return {
-    hasGemini: Boolean(env.GEMINI_API_KEY),
+    hasOpenRouter: Boolean(env.OPENROUTER_API_KEY),
     hasSheets: Boolean(
       spreadsheetId &&
         env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&

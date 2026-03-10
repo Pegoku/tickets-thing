@@ -1,8 +1,6 @@
 import "server-only";
 
-import { GoogleGenAI, createPartFromBase64 } from "@google/genai";
-
-import { getGeminiEnv } from "@/lib/env";
+import { getOpenRouterEnv } from "@/lib/env";
 import { inferSupermarketTag } from "@/lib/utils";
 import { reviewSubmissionSchema } from "@/lib/schema";
 
@@ -66,8 +64,7 @@ const receiptJsonSchema = {
 } as const;
 
 export async function extractReceiptData(pages: ProcessInputPage[]) {
-  const { apiKey, model } = getGeminiEnv();
-  const client = new GoogleGenAI({ apiKey });
+  const { apiKey, model, baseUrl } = getOpenRouterEnv();
 
   const prompt = [
     "You extract supermarket receipt data from one or more images.",
@@ -89,27 +86,59 @@ export async function extractReceiptData(pages: ProcessInputPage[]) {
     "- Ignore totals, taxes, loyalty lines, and discounts unless they represent product items.",
   ].join("\n");
 
-  const contents = [
-    prompt,
-    ...pages.map((page) =>
-      createPartFromBase64(page.buffer.toString("base64"), page.mimeType),
-    ),
-  ];
-
-  const response = await client.models.generateContent({
-    model,
-    contents,
-    config: {
-      responseMimeType: "application/json",
-      responseJsonSchema: receiptJsonSchema,
-      temperature: 0.1,
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      model,
+      temperature: 0.1,
+      response_format: {
+        type: "json_object",
+      },
+      messages: [
+        {
+          role: "system",
+          content: `${prompt}\nJSON schema:\n${JSON.stringify(receiptJsonSchema)}`,
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract receipt data from these pages.",
+            },
+            ...pages.map((page) => ({
+              type: "image_url",
+              image_url: {
+                url: `data:${page.mimeType};base64,${page.buffer.toString("base64")}`,
+              },
+            })),
+          ],
+        },
+      ],
+    }),
   });
 
-  const raw = response.text;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter request failed (${response.status}): ${errorText}`);
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string;
+      };
+    }>;
+  };
+
+  const raw = payload.choices?.[0]?.message?.content;
 
   if (!raw) {
-    throw new Error("Gemini returned an empty response.");
+    throw new Error("OpenRouter returned an empty response.");
   }
 
   const parsed = JSON.parse(raw) as Record<string, unknown>;
