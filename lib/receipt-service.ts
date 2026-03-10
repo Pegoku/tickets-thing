@@ -17,6 +17,7 @@ import {
   checkForDuplicates,
   fetchExistingRows,
   syncReceiptToSheet,
+  syncReceiptItemsToTickets,
   type ItemSyncResult,
   type SyncDecision,
   type SyncSummary,
@@ -252,8 +253,17 @@ export async function confirmDraft(
     console.log("[confirmDraft] Existing rows:", existingRows.length);
 
     console.log("[confirmDraft] Syncing to sheet with", decisions.length, "decisions...");
-    const summary = await syncReceiptToSheet(updated, decisions, existingRows);
-    console.log("[confirmDraft] Sync complete:", JSON.stringify(summary));
+    const sheetSummary = await syncReceiptToSheet(updated, decisions, existingRows);
+    console.log("[confirmDraft] Registry sync complete:", JSON.stringify(sheetSummary));
+
+    const ticketsSummary = await syncReceiptItemsToTickets(updated);
+    console.log("[confirmDraft] Tickets sync complete:", JSON.stringify(ticketsSummary));
+
+    const summary: SyncSummary & { ticketRowsLogged: number; ticketId: string } = {
+      ...sheetSummary,
+      ticketRowsLogged: ticketsSummary.rowsLogged,
+      ticketId: ticketsSummary.ticketId,
+    };
 
     const confirmed = receiptDraftSchema.parse({
       ...updated,

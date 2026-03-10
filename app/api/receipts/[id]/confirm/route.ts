@@ -35,6 +35,9 @@ export async function POST(request: Request, { params }: RouteProps) {
     if (summary.added > 0) parts.push(`${summary.added} added`);
     if (summary.updated > 0) parts.push(`${summary.updated} updated`);
     if (summary.skipped > 0) parts.push(`${summary.skipped} skipped`);
+    if (summary.ticketRowsLogged > 0) {
+      parts.push(`${summary.ticketRowsLogged} ticket rows logged (${summary.ticketId})`);
+    }
 
     const message = parts.length > 0
       ? `Sync complete: ${parts.join(", ")}.`

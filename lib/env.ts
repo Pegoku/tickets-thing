@@ -10,6 +10,7 @@ const optionalEnvSchema = z.object({
   GOOGLE_SHEETS_SPREADSHEET_URL: z.string().optional(),
   GOOGLE_SHEETS_SPREADSHEET_ID: z.string().optional(),
   GOOGLE_SHEETS_TAB_NAME: z.string().default("prices"),
+  GOOGLE_SHEETS_TICKETS_TAB_NAME: z.string().default("Tickets"),
   GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: z.string().optional(),
   STORAGE_DIR: z.string().default(path.join(process.cwd(), ".data")),
@@ -70,6 +71,7 @@ export function getSheetsEnv() {
   return {
     spreadsheetId,
     tabName: env.GOOGLE_SHEETS_TAB_NAME,
+    ticketsTabName: env.GOOGLE_SHEETS_TICKETS_TAB_NAME,
     email: env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     privateKey: env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, "\n"),
   };
@@ -90,5 +92,6 @@ export function getConfigStatus() {
     maxReceiptPages: env.MAX_RECEIPT_PAGES,
     storageDir: env.STORAGE_DIR,
     sheetTabName: env.GOOGLE_SHEETS_TAB_NAME,
+    ticketsSheetTabName: env.GOOGLE_SHEETS_TICKETS_TAB_NAME,
   };
 }

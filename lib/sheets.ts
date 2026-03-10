@@ -18,6 +18,22 @@ const HEADERS = [
   "Price/Measure",
 ];
 
+const TICKETS_HEADERS = [
+  "Ticket ID",
+  "Synced At",
+  "Supermarket",
+  "Tag",
+  "Purchase Date",
+  "Currency",
+  "Original Name",
+  "Name (EN)",
+  "Name (ES)",
+  "Unit Price",
+  "Qty",
+  "Qty Unit",
+  "Item Total",
+];
+
 /** Old headers for auto-migration detection */
 const OLD_HEADERS = [
   "supermarket_name",
@@ -89,8 +105,40 @@ async function getSheetsClient() {
   return {
     spreadsheetId: env.spreadsheetId,
     tabName: env.tabName,
+    ticketsTabName: env.ticketsTabName,
     client: google.sheets({ version: "v4", auth }),
   };
+}
+
+function columnIndexToLabel(columnCount: number): string {
+  let index = columnCount;
+  let label = "";
+
+  while (index > 0) {
+    const remainder = (index - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    index = Math.floor((index - 1) / 26);
+  }
+
+  return label;
+}
+
+async function ensureHeaders(
+  client: sheets_v4.Sheets,
+  spreadsheetId: string,
+  tabName: string,
+  headers: string[],
+) {
+  const endColumn = columnIndexToLabel(headers.length);
+
+  await client.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${tabName}!A1:${endColumn}1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [headers],
+    },
+  });
 }
 
 function toCellValue(value: string | number | null) {
@@ -296,14 +344,7 @@ export async function ensureSheetTable() {
   const usedRowCount = await getUsedRowCount(client, spreadsheetId, tabName);
   console.log("[ensureSheetTable] Used row count:", usedRowCount);
 
-  await client.spreadsheets.values.update({
-    spreadsheetId,
-    range: `${tabName}!A1:J1`,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: [HEADERS],
-    },
-  });
+  await ensureHeaders(client, spreadsheetId, tabName, HEADERS);
 
   const refreshedSheet = await getSheetInfo(client, spreadsheetId, tabName);
   const existingTable = refreshedSheet?.tables?.[0] ?? null;
@@ -545,6 +586,69 @@ function itemToRow(draft: ReceiptDraft, item: ReceiptItem): Array<string | numbe
     item.quantityUnit,
     null, // Price/Measure — filled by formula
   ];
+}
+
+function ticketIdFromDraft(draftId: string): string {
+  return `TKT-${draftId.slice(0, 8).toUpperCase()}`;
+}
+
+function itemTotal(item: ReceiptItem): number | null {
+  if (item.unitPrice === null) {
+    return null;
+  }
+
+  if (item.quantityValue !== null) {
+    return item.unitPrice * item.quantityValue;
+  }
+
+  return item.unitPrice;
+}
+
+export type TicketsSyncSummary = {
+  ticketId: string;
+  rowsLogged: number;
+};
+
+export async function syncReceiptItemsToTickets(draft: ReceiptDraft): Promise<TicketsSyncSummary> {
+  const { client, spreadsheetId, ticketsTabName } = await getSheetsClient();
+  await createSheetIfMissing(client, spreadsheetId, ticketsTabName);
+  await ensureHeaders(client, spreadsheetId, ticketsTabName, TICKETS_HEADERS);
+
+  const ticketId = ticketIdFromDraft(draft.id);
+  const syncedAt = new Date().toISOString();
+
+  const values = draft.items.map((item) => [
+    ticketId,
+    syncedAt,
+    draft.supermarketName ?? "",
+    draft.supermarketTag ?? "",
+    draft.purchaseDate ?? "",
+    draft.currency ?? "",
+    item.originalName,
+    item.translatedNameEn,
+    item.translatedNameEs,
+    item.unitPrice,
+    item.quantityValue,
+    item.quantityUnit,
+    itemTotal(item),
+  ]);
+
+  if (values.length > 0) {
+    await client.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${ticketsTabName}!A1`,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: {
+        values,
+      },
+    });
+  }
+
+  return {
+    ticketId,
+    rowsLogged: values.length,
+  };
 }
 
 export async function syncReceiptToSheet(

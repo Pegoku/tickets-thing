@@ -15,7 +15,8 @@ Upload supermarket ticket scans as images or PDFs, extract structured item rows 
   - unit price
   - price per kg/l when present or confidently derivable
 - Lets the user review and edit results before syncing
-- Writes one row per item into a Google Sheets tab with a header row and filter
+- Writes one row per item into a Google Sheets registry tab with a header row and filter
+- Logs every confirmed receipt into a `Tickets` tab as one row per receipt item grouped by `Ticket ID`
 
 ## Stack
 
@@ -60,7 +61,8 @@ Open `http://localhost:3000`.
 - `OPENROUTER_BASE_URL` - default `https://openrouter.ai/api/v1`
 - `GOOGLE_SHEETS_SPREADSHEET_URL` - preferred; spreadsheet ID is extracted from it
 - `GOOGLE_SHEETS_SPREADSHEET_ID` - optional alternative to the URL
-- `GOOGLE_SHEETS_TAB_NAME` - destination tab name
+- `GOOGLE_SHEETS_TAB_NAME` - destination registry tab name
+- `GOOGLE_SHEETS_TICKETS_TAB_NAME` - destination ticket-log tab name (default `Tickets`)
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL` - service account email
 - `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` - private key, with `\n` preserved in `.env`
 - `STORAGE_DIR` - local working storage, default `.data`
@@ -70,7 +72,7 @@ Open `http://localhost:3000`.
 ## Notes
 
 - Drafts are stored locally under `.data/receipts/<receipt-id>/draft.json`
-- Confirmed rows are appended to Google Sheets; the app does not de-duplicate existing sheet rows yet
+- Confirmed rows are synced to the registry tab and also appended to the Tickets tab with a shared ticket code per upload
 - OpenRouter output is schema-validated, but receipt OCR can still require manual cleanup
 - HEIC/HEIF uploads depend on your local `sharp` build capabilities
 
